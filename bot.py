@@ -13,7 +13,7 @@ BOT_TOKEN = "8907461003:AAEdXDdEWq2p_fttJN-Jz63-T_0EWQPupCM"
 OWNER_ID = 1460392381
 OWNER_USERNAME = "@mgpka"
 
-# مفتاح جيمناي مالتك
+# جلب المفتاح من متغيرات البيئة في Render
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 DATA_FILE = "aboosi_data.json"
@@ -47,11 +47,11 @@ app = Flask(__name__)
 # ================= إدارة البيانات وقاعدة المستخدمين =================
 def load_data():
     default_config = {
-        "bot_enabled": True,       # تشغيل/إيقاف البوت كلياً
-        "groups_enabled": True,    # تشغيل/إيقاف البوت بالكروبات
-        "private_enabled": True,   # تشغيل/إيقاف البوت بالخاص
-        "admins": [],              # قائمة المشرفين
-        "known_users": {}          # سجل المستخدمين الذين دخلوا الخاص
+        "bot_enabled": True,
+        "groups_enabled": True,
+        "private_enabled": True,
+        "admins": [],
+        "known_users": {}
     }
     if not os.path.exists(DATA_FILE):
         save_data(default_config)
@@ -73,7 +73,6 @@ def save_data(data):
 chat_sessions = {}
 user_states = {}
 
-# توقيت العراق الرسمي (UTC+3)
 def get_iraq_time():
     tz_iraq = timezone(timedelta(hours=3))
     now = datetime.now(tz_iraq)
@@ -88,24 +87,17 @@ def run_web():
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
 
-# ================= استدعاء الذكاء الاصطناعي =================
+# ================= استدعاء الذكاء الاصطناعي مع كشف الخطأ =================
 def ask_aboosi(chat_id, user_name, text):
-    if chat_id not in chat_sessions:
-        chat_sessions[chat_id] = model.start_chat(history=[])
-    
-    session = chat_sessions[chat_id]
-    prompt = f"المستخدم ({user_name}) يكول: {text}"
-    
     try:
+        if chat_id not in chat_sessions:
+            chat_sessions[chat_id] = model.start_chat(history=[])
+        session = chat_sessions[chat_id]
+        prompt = f"المستخدم ({user_name}) يكول: {text}"
         response = session.send_message(prompt)
         return response.text
-    except Exception:
-        try:
-            # إذا امتلأت الذاكرة أو حدث خطأ نعيد تهيئة الجلسة فوراً
-            chat_sessions[chat_id] = model.start_chat(history=[])
-            return chat_sessions[chat_id].send_message(prompt).text
-        except Exception:
-            return "سحكت بالفيوزات من كثر السوالف، عيد شكلت عيوني 😂"
+    except Exception as e:
+        return f"⚠️ الخطأ الحقيقي هو:\n{e}"
 
 # ================= لوحة تحكم المالك الشاملة =================
 def get_control_keyboard():
@@ -152,9 +144,7 @@ def handle_start(message):
     name = message.from_user.first_name or "مجهول"
     username = f"@{message.from_user.username}" if message.from_user.username else "بدون يوزر"
 
-    # المحادثات في الخاص
     if message.chat.type == "private":
-        # 🚨 رصد وحفظ أي عضو يدخل للخاص وإرسال إشعار فوري لعلي
         if user_id not in data["known_users"] and message.from_user.id != OWNER_ID:
             now_str = get_iraq_time()
             data["known_users"][user_id] = {
@@ -288,7 +278,6 @@ def handle_all_chat(message):
     is_admin = (user_id in data.get("admins", []))
     bot_info = bot.get_me()
 
-    # إذا كان المالك علي يقوم بإدخال آيدي مشرف أو نص إذاعة
     if message.chat.type == "private" and is_owner and user_id in user_states:
         state = user_states.pop(user_id, None)
         if state == "waiting_for_admin":
@@ -318,11 +307,10 @@ def handle_all_chat(message):
             bot.send_message(message.chat.id, f"✅ اكتملت الإذاعة! وصلت بنجاح إلى {sent_count} مستخدم.")
             return
 
-    # التحقق من حالة الطاقة العامة للبوت
     if not data.get("bot_enabled", True) and not is_owner:
         return
 
-    # 1. التفاعل داخل المجموعات والكروبات
+    # 1. التفاعل بالكروبات
     if message.chat.type in ["group", "supergroup"]:
         if not data.get("groups_enabled", True) and not is_owner and not is_admin:
             return
@@ -340,12 +328,11 @@ def handle_all_chat(message):
             except Exception:
                 bot.send_message(message.chat.id, reply)
 
-    # 2. التفاعل في المحادثات الخاصة
+    # 2. التفاعل بالخاص
     elif message.chat.type == "private":
         if not data.get("private_enabled", True) and not is_owner and not is_admin:
             return
 
-        # رصد وتحديث وقت آخر دخول
         uid_str = str(user_id)
         if uid_str not in data["known_users"] and not is_owner:
             now_str = get_iraq_time()
