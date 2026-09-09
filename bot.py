@@ -14,7 +14,7 @@ OWNER_ID = 1460392381
 OWNER_USERNAME = "@mgpka"
 
 # مفتاح جيمناي مالتك
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6I5CQ94OJeNIHGzA2g1y3bzcme3O8NQQD1RiydBM2Jq_w")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 DATA_FILE = "aboosi_data.json"
 
