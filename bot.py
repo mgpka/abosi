@@ -13,8 +13,8 @@ BOT_TOKEN = "8907461003:AAEdXDdEWq2p_fttJN-Jz63-T_0EWQPupCM"
 OWNER_ID = 1460392381
 OWNER_USERNAME = "@mgpka"
 
-# مفتاح جيمناي (الصقه هنا مباشرة أو ضعه كمتغير بيئة بـ Render)
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "ضع_مفتاح_API_جيمناي_هنا")
+# مفتاح جيمناي مالتك
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6I5CQ94OJeNIHGzA2g1y3bzcme3O8NQQD1RiydBM2Jq_w")
 
 DATA_FILE = "aboosi_data.json"
 
